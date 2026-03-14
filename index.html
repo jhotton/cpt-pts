@@ -3,38 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Score Master Solo Log</title>
+    <title>Score Master Always Log</title>
     <style>
         :root { --bg: #0e1117; --card: #262730; --primary: #ff4b4b; --text: #fafafa; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 8px; }
         
-        /* Sidebar & Sidebar UI */
+        /* Sidebar & Overlay */
         #sidebar { position: fixed; left: -280px; top: 0; width: 250px; height: 100%; background: var(--card); border-right: 1px solid #444; transition: 0.3s; padding: 15px; z-index: 1000; overflow-y: auto; }
         #sidebar.open { left: 0; }
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; z-index: 999; }
         
-        /* Header & Grid */
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; }
+        /* Layout */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; width: 100%; }
         
         /* Player Card */
-        .card { background: var(--card); border: 1px solid #444; border-radius: 8px; padding: 6px; text-align: center; display: flex; flex-direction: column; }
-        .name { font-size: 11px; font-weight: bold; color: var(--primary); text-transform: uppercase; margin-bottom: 2px; height: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .score { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
+        .card { background: var(--card); border: 1px solid #444; border-radius: 8px; padding: 5px; text-align: center; display: flex; flex-direction: column; min-height: 180px; }
+        .name { font-size: 11px; font-weight: bold; color: var(--primary); text-transform: uppercase; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .score { font-size: 22px; font-weight: bold; margin-bottom: 5px; }
         
         /* Controls */
-        .controls { display: flex; gap: 3px; margin-bottom: 6px; }
+        .controls { display: flex; gap: 3px; margin-bottom: 5px; }
         button { border: none; border-radius: 4px; color: white; cursor: pointer; font-weight: bold; }
-        .btn-plus { background: #2e7d32; flex: 1; padding: 10px 0; }
-        .btn-minus { background: #c62828; flex: 1; padding: 10px 0; }
-        .btn-log { background: #444; font-size: 10px; padding: 4px 0; margin-top: 5px; width: 100%; }
+        .btn-plus { background: #2e7d32; flex: 1; padding: 8px 0; font-size: 16px; }
+        .btn-minus { background: #c62828; flex: 1; padding: 8px 0; font-size: 16px; }
         
-        input[type="number"] { width: 85%; background: #0e1117; border: 1px solid #444; color: white; text-align: center; padding: 4px; border-radius: 4px; font-size: 11px; margin: 0 auto; }
+        input[type="number"] { width: 90%; background: #0e1117; border: 1px solid #444; color: white; text-align: center; padding: 4px; border-radius: 4px; font-size: 11px; margin: 0 auto 5px auto; }
 
-        /* Individuel Logs (Date + Heure) */
-        .player-history { font-size: 9px; color: #aaa; margin-top: 5px; max-height: 80px; overflow-y: auto; display: none; border-top: 1px dashed #444; padding-top: 5px; text-align: left; }
-        .player-history.show { display: block; }
-        .log-entry { border-bottom: 1px solid #333; padding: 2px 0; display: flex; justify-content: space-between; }
+        /* Individuel Logs (Toujours affichés) */
+        .player-history { 
+            font-size: 9px; 
+            color: #aaa; 
+            margin-top: 5px; 
+            flex-grow: 1;
+            overflow-y: auto; 
+            border-top: 1px solid #333; 
+            padding-top: 4px; 
+            text-align: left;
+            max-height: 70px; /* Limite pour garder la grille compacte */
+        }
+        .log-entry { border-bottom: 1px solid #1f2128; padding: 2px 0; display: flex; justify-content: space-between; }
+        
+        /* Custom Scrollbar pour les petits logs */
+        .player-history::-webkit-scrollbar { width: 2px; }
+        .player-history::-webkit-scrollbar-thumb { background: #444; }
     </style>
 </head>
 <body>
@@ -51,16 +63,15 @@
     <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
     <div class="header">
-        <button style="background:transparent; font-size:24px; color:white;" onclick="toggleSidebar()">☰</button>
-        <h2 style="color:var(--primary); font-size:18px; margin:0;">SCORE MASTER</h2>
+        <button style="background:transparent; font-size:20px; color:white;" onclick="toggleSidebar()">☰</button>
+        <h2 style="color:var(--primary); font-size:16px; margin:0;">SCORE MASTER</h2>
         <div style="width:30px;"></div>
     </div>
 
     <div id="player-grid" class="grid"></div>
 
     <script>
-        // Utilisation d'une nouvelle clé pour éviter les conflits de données
-        let state = JSON.parse(localStorage.getItem('scoreStateV3')) || {
+        let state = JSON.parse(localStorage.getItem('scoreStateV4')) || {
             players: [
                 { id: 0, name: "J1", score: 0, history: [] },
                 { id: 1, name: "J2", score: 0, history: [] },
@@ -69,7 +80,7 @@
             ]
         };
 
-        function save() { localStorage.setItem('scoreStateV3', JSON.stringify(state)); }
+        function save() { localStorage.setItem('scoreStateV4', JSON.stringify(state)); }
 
         function toggleSidebar() {
             const sb = document.getElementById('sidebar');
@@ -87,18 +98,10 @@
             const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             const ptsStr = pts > 0 ? `+${pts}` : pts;
             
-            // On stocke l'objet log
             p.history.unshift({ time: timeStr, val: ptsStr });
-            if (p.history.length > 20) p.history.pop(); // On garde les 20 derniers logs par joueur
+            if (p.history.length > 30) p.history.pop();
             
             save(); render();
-        }
-
-        function togglePlayerLog(id) {
-            const el = document.getElementById(`log-p-${id}`);
-            el.classList.toggle('show');
-            const btn = document.getElementById(`btn-p-${id}`);
-            btn.textContent = el.classList.contains('show') ? '✖ Fermer' : '📜 Détails';
         }
 
         function render() {
@@ -108,7 +111,6 @@
                 const card = document.createElement('div');
                 card.className = 'card';
                 
-                // Construction des lignes de log
                 const logHtml = p.history.map(h => `
                     <div class="log-entry">
                         <span>${h.time}</span>
@@ -124,8 +126,7 @@
                         <button class="btn-minus" onclick="updateScore(${p.id}, -1)">-</button>
                     </div>
                     <input type="number" placeholder="Pts" onchange="updateScore(${p.id}, parseInt(this.value)); this.value=''">
-                    <button id="btn-p-${p.id}" class="btn-log" onclick="togglePlayerLog(${p.id})">📜 Détails</button>
-                    <div id="log-p-${p.id}" class="player-history">${logHtml || '<div style="text-align:center">Vide</div>'}</div>
+                    <div class="player-history">${logHtml || '<div style="text-align:center; color:#444;">Aucun point</div>'}</div>
                 `;
                 grid.appendChild(card);
             });
@@ -138,7 +139,7 @@
             container.innerHTML = '';
             state.players.forEach((p, i) => {
                 const div = document.createElement('div');
-                div.style.marginBottom = "8px";
+                div.style.marginBottom = "5px";
                 div.innerHTML = `<input type="text" value="${p.name}" style="width:90%; padding:5px; background:#0e1117; border:1px solid #444; color:white; border-radius:4px;" oninput="state.players[${i}].name = this.value; save(); render();">`;
                 container.appendChild(div);
             });
@@ -152,7 +153,7 @@
         }
 
         function resetAll() {
-            if(confirm("Réinitialiser tous les scores et historiques ?")) {
+            if(confirm("Tout remettre à zéro ?")) {
                 state.players.forEach(p => { p.score = 0; p.history = []; });
                 save(); render(); toggleSidebar();
             }
